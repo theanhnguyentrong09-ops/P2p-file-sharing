@@ -63,3 +63,29 @@ ssize_t recvAll(int sock, void* buffer, size_t length) {
     }  
     return total;
 }
+struct FileHeader {
+    char filename[256];
+    uint32_t total_chunks;
+};
+void sendMessage(string mess, int& sock){
+    uint32_t lenMess = htonl(mess.size());
+    send(sock, &lenMess, sizeof(lenMess), 0);     // gửi độ dài trước
+    send(sock, mess.c_str(), mess.size(), 0);      // rồi mới gửi nội dung
+}
+string recvMessage(int& sock){
+    uint32_t lenMess;
+    if (recvAll(sock, &lenMess, sizeof(lenMess)) <= 0) {
+        //cout<<"Lost connection while receiving length of file name"<<endl;
+        return "failed to recv message";
+    }
+
+    uint32_t len = ntohl(lenMess);
+    vector<char> buffer(len);
+
+    if (recvAll(sock, buffer.data(), len) <= 0) {
+        //cout<<"Lost connection while receiving file name"<<endl;
+        return "failed to recv message";
+    }
+    string fileName(buffer.begin(), buffer.end());
+    return fileName;
+}

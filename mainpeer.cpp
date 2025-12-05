@@ -15,19 +15,11 @@
 using namespace std;
 
 int main(){
+    int maxConnection=10;
     string ip="127.0.0.1";
     Peer mypeer(ip,54001);
 
     int toServerSock=socket(AF_INET, SOCK_STREAM, 0);
-    // sockaddr_in myaddress{};
-    // myaddress.sin_family = AF_INET;
-    // myaddress.sin_port = htons(54011);
-    // myaddress.sin_addr.s_addr = inet_addr(mypeer.addr.c_str());
-    // if(bind(toServerSock, (sockaddr*)&myaddress, sizeof(myaddress)) < 0) { 
-    //     cerr << "Bind error\n"; 
-    //     close(toServerSock);
-    //     return 0;
-    // }
 
     sockaddr_in server{};
     server.sin_family = AF_INET;
@@ -38,14 +30,21 @@ int main(){
         cerr << "Connect to server failed\n";
         return 0; 
     }
-    thread(&Peer::handleTracker, &mypeer, toServerSock, server).detach();
-    thread(&Peer::acceptLoop,&mypeer);
-    cout << "Press ENTER to exit...\n";
-    while(true){
-        if(cin.get() == '\n'){
-            cout << "Exiting program.\n";
-            break;
-        }
+    thread(&Peer::handleTracker, &mypeer, toServerSock).detach();
+    thread(&Peer::acceptLoop,&mypeer,maxConnection).detach();
+    cout << "Press 's' to collect files, ENTER to skip\n";
+    char c = cin.get();
+    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // loại bỏ phần còn sót trong buffer
+
+    if(c == 's'){
+        cout << "Starting collect files...\n";
+        mypeer.collectFiles();
+    } else {
+        cout << "Did not collect files\n";
     }
+
+    cout << "Press ENTER to exit...\n";
+    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // đợi ENTER
+    cout << "Exiting program.\n";
     close(toServerSock);
 }
